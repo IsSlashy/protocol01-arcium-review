@@ -48,10 +48,10 @@ Only the final tally is revealed after deadline. Authority + deadline checks on-
 
 ```
 programs/p01_arcium/
-├── encrypted-ixs/src/lib.rs    # Arcis MPC circuits (11 circuits)
-├── src/lib.rs                  # Anchor program (queue, callbacks, accounts)
+├── encrypted-ixs/src/lib.rs    # Arcis MPC circuits (11 circuits, ~416 lines)
+├── src/lib.rs                  # Anchor program (queue, callbacks, accounts, ~1700 lines)
 ├── Cargo.toml                  # Dependencies (anchor 0.32.1, arcium 0.8.5)
-├── Arcium.toml                 # Cluster config
+├── Arcium.toml                 # Cluster config (devnet 456, mainnet 2026)
 └── Anchor.toml                 # Program ID
 
 sdk/src/
@@ -62,7 +62,33 @@ sdk/src/
 ├── nullifier/index.ts          # commitNullifier
 ├── audit/index.ts              # submitBalanceForAudit, finalizeAudit
 └── stealth/index.ts            # registerViewingKey, scanAnnouncements
+
+build/
+├── *.idarc                     # Circuit interface descriptors (input/output schemas)
+└── *.ts                        # Generated TypeScript types for each circuit
+
+tests/
+└── p01-arcium.test.ts          # Integration tests (init comp_defs, all 6 UCs)
 ```
+
+## Circuit Costs (ACUs)
+
+| Circuit | ACUs | Comparisons | SHA3 | MXE State |
+|---------|------|-------------|------|-----------|
+| `balance_audit` | 530M | 0 | No | Write (accumulator) |
+| `finalize_audit` | 144M | 0 | No | Read (accumulator) |
+| `private_vote` | 628M | 8 | No | Write (8-option tally) |
+| `finalize_tally` | 177M | 0 | No | Read (8-option tally) |
+| `private_vote_binary` | 554M | 2 | No | Write (2-option tally) |
+| `finalize_tally_binary` | 145M | 0 | No | Read (2-option tally) |
+| `nullifier_commit` | 1,012M | 0 | Yes (32B) | None |
+| `private_lookup` | 512M | 0 | No | None (stub) |
+| `register_viewing_key` | 769M | 0 | No | Write (32B key) |
+| `stealth_scan_single` | 1,216M | 1 | Yes (64B) | Read (32B key) |
+| `threshold_decrypt` | 466M | 0 | No | None |
+
+Most expensive: `stealth_scan_single` (SHA3-256 over 64 bytes + 1 comparison).
+Cheapest: `finalize_audit` / `finalize_tally_binary` (just reveals).
 
 ## Questions for Arcium Team
 
