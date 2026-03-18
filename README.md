@@ -138,4 +138,4 @@ We'd appreciate a review of the overall circuit design for:
 ## Contact
 
 **Volta Team** (solo dev)
-Building a privacy layer for Solana — ZK-SNARKs (Groth16), stealth addresses (ECDH), confidential balances, and Arcium MPC for threshold operations.
+Building a privacy layer for Solana with Arcium MPC for confidential computation.
