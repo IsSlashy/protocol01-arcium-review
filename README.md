@@ -132,10 +132,17 @@ We'd appreciate a review of the overall circuit design for:
 
 ## Tech Stack
 
-- Anchor 0.32.1 / arcium-anchor 0.8.5
-- Arcis 0.8.5 (encrypted instructions)
-- @arcium-hq/client 0.8.5
+- Anchor 0.32.1 / arcium-anchor 0.9.0
+- Arcis 0.9.0 (encrypted instructions)
+- @arcium-hq/client 0.9.0
 - Solana devnet (Agave 2.2.14)
+
+## v0.9.5 Privacy Improvements
+
+- **Full stealth unshield**: Both signer and recipient are ephemeral on-chain. User wallet never appears in the unshield transaction.
+- **Stealth ECDH recipient**: Pool sends to a one-time address derived from the user's meta-address (X25519 + ML-KEM-768 hybrid).
+- **MPC nullifier fix**: 32-byte nullifier split into 4 × u64 chunks to fit the 254-bit Poseidon field. Fixes ~75% silent failure rate.
+- **Timing decorrelation**: Random jitter (1-7s) between funding, unshield, and sweep transactions.
 
 ## Contact
 
