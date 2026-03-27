@@ -92,35 +92,39 @@ tests/
 Most expensive: `stealth_scan_single` (SHA3-256 over 64 bytes + 1 comparison).
 Cheapest: `finalize_audit` / `finalize_tally_binary` (just reveals).
 
-## Questions for Arcium Team
+## Integration Status (v0.9.5)
 
-### 1. MXE State Persistence
-We use `Enc<Mxe, T>` for state that needs to persist between calls:
-- `balance_audit` accumulates into `Enc<Mxe, AuditAccumulator>`
-- `private_vote` accumulates into `Enc<Mxe, VoteTally>`
-- `register_viewing_key` stores into `Enc<Mxe, ViewingKeyState>`
+| Use Case | Status | Notes |
+|----------|--------|-------|
+| UC1 Confidential Relay | Operational | Threshold decrypt + callback working on devnet |
+| UC2 Anonymous Lookup | Stub | Needs on-chain account access from MPC (see Q2 below) |
+| UC3 Hidden Nullifier | **Fixed** | Was failing ~75% — nullifier split into 4×u64 chunks for Poseidon field |
+| UC4 Balance Audit | Operational | Accumulator pattern with `Enc<Mxe, T>` |
+| UC5 Stealth Scanning | Operational | Viewing key threshold-sharded, view-tag matching |
+| UC6 Private Voting | Operational | Binary variant (2 comparisons) deployed alongside 8-option |
 
-**Question:** Does `Enc<Mxe, T>` state persist across separate computation requests? Or only within a single computation session? If it doesn't persist, our accumulation pattern breaks.
+### What's Working in Production
+- **Shield**: Stealth intermediary hides wallet on-chain → pool deposit via ZK program
+- **Unshield**: Stealth signer (fee payer) + stealth ECDH recipient → wallet never visible
+- **Nullifier**: 4×u64 chunk encryption → MPC SHA3 commitment (when MPC available, graceful fallback to standard PDA)
+- **Sweep**: Delayed auto-sweep (3-7s jitter) from stealth recipient to real wallet
+- **Bluetooth note transfer**: Off-chain handoff, zero on-chain trace
 
-### 2. Comparison Cost Optimization
-`private_vote` does 8 equality comparisons per call (`opt == 0` through `opt == 7`). We added `private_vote_binary` (2 comparisons) as an optimization for yes/no votes.
+## Open Questions for Arcium Team
 
-**Question:** Is there a recommended Arcis pattern for conditional accumulation without equality comparisons? (e.g., arithmetic selector, lookup table, or boolean masking)
+### 1. On-Chain Account Access from MPC
+`private_lookup` needs to read a Solana PDA (registry) from within the MPC circuit. Currently stubbed (echoes input).
 
-### 3. On-Chain Account Access from MPC
-`private_lookup` is a stub — it echoes input instead of reading the on-chain registry. The real implementation needs to read a Solana PDA from within the MPC circuit.
+**Question:** How do we pass an on-chain account reference to an Arcis circuit? Via `ArgBuilder` remaining accounts, or a dedicated API?
 
-**Question:** How do we pass an on-chain account reference to an Arcis circuit so the MPC can read its data? Is this via `ArgBuilder` remaining accounts, or is there a dedicated API?
+### 2. Hash Function Cost
+`nullifier_commit` and `stealth_scan_single` use `SHA3_256::new().digest()` inside MPC. SHA3 is expensive in MPC due to non-linear rounds.
 
-### 4. SHA3 in MPC — Cost Considerations
-`nullifier_commit` and `stealth_scan_single` both use `SHA3_256::new().digest()`. SHA3 inside MPC involves many rounds of non-linear operations.
+**Question:** Would Poseidon or MiMC be significantly cheaper in ACUs while maintaining security for our use case?
 
-**Question:** Is SHA3 the recommended hash for MPC circuits, or would a different hash (e.g., Poseidon, MiMC) be significantly cheaper in terms of ACUs?
-
-### 5. General Architecture Review
+### 3. Architecture Review
 We'd appreciate a review of the overall circuit design for:
-- Red flags (security, correctness)
-- Unnecessary complexity
+- Security red flags
 - Opportunities to batch or merge circuits
 - Any Arcis anti-patterns we should avoid
 
@@ -147,4 +151,8 @@ We'd appreciate a review of the overall circuit design for:
 ## Contact
 
 **Volta Team** (solo dev)
-Building a privacy layer for Solana with Arcium MPC for confidential computation.
+Privacy layer for Solana — ZK-SNARKs (Groth16), STARK proofs (quantum-resistant), stealth addresses (ECDH + ML-KEM-768), and Arcium gMPC for confidential computation.
+
+- **12 Solana programs**, 6 Circom circuits, 6 STARK AIRs, 3 client apps
+- **Mobile**: Android APK with on-device ZK proving (WebView WASM)
+- **Devnet**: All programs deployed and operational
