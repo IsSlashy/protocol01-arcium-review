@@ -31,6 +31,8 @@ RPC node never sees who you're looking up. Currently a proof-of-concept stub.
 Encrypted nullifier → MPC computes SHA3-256 commitment → returns hash on-chain.
 Nullifier stays secret, only the commitment is public. Prevents double-spend without revealing which note was spent.
 
+**v0.9.5 fix:** Nullifier encryption now splits 32-byte nullifier into 4 × u64 chunks (each bounded within the 254-bit Poseidon field). Previously, a single 256-bit bigint overflowed the field in ~75% of cases, causing silent MPC failures.
+
 ### UC4: Confidential Balance Audit (`balance_audit` + `finalize_audit`)
 Users submit encrypted balances → MPC accumulates → authority reveals only the total.
 Individual amounts never disclosed. Uses `Enc<Mxe, AuditAccumulator>` for cross-call state.
@@ -50,7 +52,7 @@ Only the final tally is revealed after deadline. Authority + deadline checks on-
 programs/p01_arcium/
 ├── encrypted-ixs/src/lib.rs    # Arcis MPC circuits (11 circuits, ~416 lines)
 ├── src/lib.rs                  # Anchor program (queue, callbacks, accounts, ~1700 lines)
-├── Cargo.toml                  # Dependencies (anchor 0.32.1, arcium 0.8.5)
+├── Cargo.toml                  # Dependencies (anchor 0.32.1, arcium 0.9.0)
 ├── Arcium.toml                 # Cluster config (devnet 456, mainnet 2026)
 └── Anchor.toml                 # Program ID
 
